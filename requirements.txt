@@ -1,0 +1,6 @@
+fastapi
+uvicorn
+git+https://github.com/chris-t-fernando/parameter-store.git
+requests
+git+https://github.com/chris-t-fernando/symbol-cache.git 
+git+https://github.com/chris-t-fernando/bda_clock_client.git
