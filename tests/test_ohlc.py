@@ -1,11 +1,10 @@
 import requests
 from datetime import date, datetime
-from app import main, exceptions
+from app import main, exceptions, schemas
 import unittest
 import pandas as pd
 
-
-urlbase = "http://127.0.0.1:8001/symbol/"
+urlbase = "http://127.0.0.1:8001"
 
 
 class TestEndpoints(unittest.TestCase):
@@ -13,8 +12,8 @@ class TestEndpoints(unittest.TestCase):
         url = f"{urlbase}"
         return requests.get(url)
 
-    def test_data(self):
-        url = f"{urlbase}5m/1INCH"
+    def test_get_data(self):
+        url = f"{urlbase}/nyse/symbol/AAPL/ohlc/5m"
         result = requests.get(url)
         print("banan")
 
@@ -53,10 +52,16 @@ class TestFunctions(unittest.TestCase):
         )
 
     def test_validate_date_good_date(self):
+        interval_settings = schemas.Interval(
+            interval=300, interval_name="5m", max_history_days=300
+        )
         date = "2023-03-04 12:09:32.578174+11:00"
-        interval = "5m"
+        market = "nyse"
+        validated_date = main.validate_date(
+            interval_settings=interval_settings, start_date=date, market=market
+        )
         self.assertEqual(
-            main.validate_date(date, interval),
+            validated_date,
             datetime.fromisoformat(date).astimezone(),
         )
 
@@ -113,7 +118,7 @@ class TestFunctions(unittest.TestCase):
         interval_str = "5m"
         expected = pd.Timestamp("2023-03-04 08:00:00+1100")
 
-        snapped = main._snap_interval(date, interval_str, "nyse")
+        snapped = main._snap_to_interval(date, interval_str, "nyse")
 
         self.assertEqual(snapped, expected)
 
@@ -122,6 +127,6 @@ class TestFunctions(unittest.TestCase):
         interval_str = "5m"
         expected = pd.Timestamp("2023-03-02 06:05:00+1100")
 
-        snapped = main._snap_interval(date, interval_str, "nyse")
+        snapped = main._snap_to_interval(date, interval_str, "nyse")
 
         self.assertEqual(snapped, expected)

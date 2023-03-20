@@ -52,6 +52,7 @@ def csv_to_df(csv_str: str):
 
 def validate_date(
     interval_settings: schemas.Interval,
+    market: str,
     start_date: str = None,
     end_date: str = None,
 ):
@@ -90,19 +91,11 @@ def validate_date(
             )
 
     # now align it to the nearest interval
-    out_date = date_obj.replace(second=0)
-    out_date = out_date.replace(microsecond=0)
-    if interval_settings.interval_name == "1m":
-        ...
-    elif interval_settings.interval_name == "5m":
-        mod_minute = out_date.minute % 5
-        out_date = out_date.replace(minute=out_date.minute - mod_minute)
-    elif interval_settings.interval_name == "1h":
-        out_date = out_date.replace(minute=0)
-    elif interval_settings.interval_name == "1d":
-        out_date = out_date.replace(minute=0, hour=0)
+    snapped_date = _snap_to_interval(
+        str(date_obj), interval_settings.interval_name, market=market
+    )
 
-    return out_date
+    return snapped_date
 
 
 def _get_interval_settings(interval):
@@ -137,7 +130,7 @@ def _get_s3_data(interval_name: str, symbol: str):
     return df
 
 
-def _snap_interval(
+def _snap_to_interval(
     timestamp: datetime.datetime, interval_name: str, market: str, forward=False
 ):
     timestamp_obj = datetime.datetime.fromisoformat(timestamp)
@@ -177,7 +170,8 @@ def _market_last_open_day(market: str, when: str):
     when_obj_tz = when_obj.astimezone(pytz.utc)
     open_window = when_obj_tz - relativedelta(days=4)
     market_hours = market_handle.schedule(start_date=open_window, end_date=when_obj_tz)
-    return market_hours.iloc[-1]
+    return market_hours.loc[market_hours.market_open < when_obj].iloc[-1]
+    # return market_hours.iloc[-1]
 
 
 def _market_open_at(market: str, open_at: str):
@@ -205,6 +199,15 @@ def _market_open_at(market: str, open_at: str):
     return True
 
 
+def _make_clock(clock_id: BdaClock = None):
+    # first up work out what the current time is meant to be
+    if clock_id == "realtime" or not clock_id:
+        now = datetime.datetime.now().astimezone()
+    else:
+        clock = BdaClock(clock_id)
+        now = clock.now
+
+
 @app.get("/symbol/", response_model=schemas.Intervals)
 def list_intervals():
     intervals = [
@@ -217,24 +220,34 @@ def list_intervals():
     return intervals
 
 
-@app.get("/{market}/symbol/{symbol}/hours", response_model=schemas.Symbol)
-def get_data(market: str, symbol: str, open_at=None, clock_id=None):
-    if symbol == "AAPL":
-        _market_open_at(market=market, open_at=open_at)
-        return {"market": market, "is_open": False, "open_at": True}
+@app.get("/{market}/hours", response_model=schemas.Symbol)
+def get_market_hours(market: str, clock_id=None):
+    # first up work out what the current time is meant to be
+    if clock_id:
+        now = BdaClock(clock_id).now
+    else:
+        now = datetime.datetime.now().astimezone()
+
+    open = _market_open_at(market=market, open_at=str(now))
+    return {"market": market, "is_open": open}
 
 
-@app.get("/symbol/{symbol}/ohlc/{interval}", response_model=schemas.Intervals)
-def get_data(interval: str, symbol: str, start="max", end="max", clock_id="realtime"):
+@app.get("/{market}/symbol/{symbol}/ohlc/{interval}", response_model=schemas.Intervals)
+def get_data(
+    market: str, interval: str, symbol: str, start="max", end="max", clock_id=None
+):
     # get interval settings like max range
     interval_settings = _get_interval_settings(interval)
 
     # now we have some data - check if we have all the data
     try:
         start_date = validate_date(
-            interval_settings=interval_settings, start_date=start
+            interval_settings=interval_settings, start_date=start, market=market
         )
-        end_date = validate_date(interval_settings=interval_settings, end_date=end)
+        end_date = validate_date(
+            interval_settings=interval_settings, end_date=end, market=market
+        )
+
     except Exception as e:
         raise
 
@@ -242,11 +255,10 @@ def get_data(interval: str, symbol: str, start="max", end="max", clock_id="realt
         raise exceptions.EndBeforeStartError
 
     # first up work out what the current time is meant to be
-    if clock_id == "realtime":
-        now = datetime.datetime.now().astimezone()
+    if clock_id:
+        now = BdaClock(clock_id).now
     else:
-        clock = BdaClock(clock_id)
-        now = clock.now
+        now = datetime.datetime.now().astimezone()
 
     # now see if we have any of this data already cached in redis
     redis_key = f"ohlc:{interval_settings.interval_name}:{symbol}"
@@ -282,12 +294,21 @@ def get_data(interval: str, symbol: str, start="max", end="max", clock_id="realt
             days=interval_settings.max_history_days
         )
         max_start = validate_date(
-            interval_settings=interval_settings, start_date=max_start.isoformat()
+            interval_settings=interval_settings,
+            market=market,
+            start_date=max_start.isoformat(),
         )
         if start_date >= max_start:
             fetch_data = True
         elif max_start < df.index.min():
             fetch_data = True
+
+    latest_record = _snap_to_interval(
+        now.isoformat(), interval_settings.interval_name, market=market
+    )
+    if latest_record > df.index.max():
+        # there is more to get
+        fetch_data = True
 
     if fetch_data:
         # grab data from yf, put it in s3, load it in to redis
