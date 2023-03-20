@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 import uvicorn
 import json
 from parameter_store import S3
@@ -6,10 +6,11 @@ from parameter_store import exceptions as p_exceptions
 import datetime
 from dateutil.relativedelta import relativedelta
 import pandas as pd
-from bda_clock import BdaClock
-
-# from symbol import Symbol, SymbolData, InvalidQuantity, InvalidPrice
-
+from bda_clock import BdaClock, NoSuchClockError
+import redis
+from symbol import SymbolData
+import pandas_market_calendars as mcal
+import pytz
 
 # from . import crud, deps, models, schemas, security
 # from app
@@ -19,6 +20,10 @@ if "unittest" in sys.modules.keys():
     from . import schemas, config, exceptions
 else:
     import schemas, config, exceptions
+
+# redit config
+pool = redis.ConnectionPool(host="localhost", port=6379, db=0, decode_responses=True)
+redis = redis.Redis(connection_pool=pool)
 
 
 """
@@ -45,13 +50,30 @@ def csv_to_df(csv_str: str):
     return df
 
 
-def validate_date(date, interval_settings: schemas.Interval):
-    # get the max allowable history first
+def validate_date(
+    interval_settings: schemas.Interval,
+    start_date: str = None,
+    end_date: str = None,
+):
+    date = start_date if start_date else end_date
+    if not start_date and not end_date:
+        raise ValueError(
+            f"Cannot run validate_date function without specifying either start_date or end_date"
+        )
+    if start_date and end_date:
+        raise ValueError(
+            f"Cannot run validate_date function specifying both start_date or end_date"
+        )
 
+    # get the max allowable history first
     if date == "max":
-        # default, so go back as far as we can from the real today
         real_now = datetime.datetime.now().astimezone()
-        date_obj = real_now - relativedelta(days=interval_settings.max_history_days)
+        if start_date:
+            date_obj = real_now - relativedelta(days=interval_settings.max_history_days)
+
+        elif end_date:
+            date_obj = real_now
+
     else:
         # specified a date, so try convert it to a real datetime
         try:
@@ -67,7 +89,20 @@ def validate_date(date, interval_settings: schemas.Interval):
                 f"Specified start date {date} is timezone naive"
             )
 
-    return date_obj
+    # now align it to the nearest interval
+    out_date = date_obj.replace(second=0)
+    out_date = out_date.replace(microsecond=0)
+    if interval_settings.interval_name == "1m":
+        ...
+    elif interval_settings.interval_name == "5m":
+        mod_minute = out_date.minute % 5
+        out_date = out_date.replace(minute=out_date.minute - mod_minute)
+    elif interval_settings.interval_name == "1h":
+        out_date = out_date.replace(minute=0)
+    elif interval_settings.interval_name == "1d":
+        out_date = out_date.replace(minute=0, hour=0)
+
+    return out_date
 
 
 def _get_interval_settings(interval):
@@ -90,16 +125,84 @@ def _validate_start(
     return True
 
 
-def _get_cached_data(interval_str: int, symbol: str):
-    path = config.data_path_template.substitute(interval=interval_str, symbol=symbol)
+def _get_s3_data(interval_name: str, symbol: str):
+    path = config.data_path_template.substitute(interval=interval_name, symbol=symbol)
     try:
         existing_data = s3.get(path)
     except p_exceptions.NoSuchKeyException as e:
-        existing_data = s3.get(config.df_template)
+        return None
 
     # do something smart with imported data to validate it
     df = csv_to_df(existing_data)
     return df
+
+
+def _snap_interval(
+    timestamp: datetime.datetime, interval_name: str, market: str, forward=False
+):
+    timestamp_obj = datetime.datetime.fromisoformat(timestamp)
+
+    # now align it to the nearest interval
+    out_date = timestamp_obj.replace(second=0, microsecond=0)
+    #    out_date = out_date.replace(microsecond=0)
+    if interval_name == "1m":
+        ...
+    elif interval_name == "5m":
+        mod_minute = out_date.minute % 5
+        out_date = out_date.replace(minute=out_date.minute - mod_minute)
+    elif interval_name == "1h":
+        out_date = out_date.replace(minute=0)
+    elif interval_name == "1d":
+        out_date = out_date.replace(minute=0, hour=0)
+
+    # is the market open at this time?
+    if _market_open_at(market, str(out_date)):
+        return out_date
+    else:
+        last_day = _market_last_open_day(market, str(out_date))
+        last_interval = last_day.market_close
+        # convert this to the original timezone
+        last_interval_tz = last_interval.astimezone(timestamp_obj.tzname())
+        return last_interval_tz
+
+
+def _market_last_open_day(market: str, when: str):
+    market_handle = mcal.get_calendar(market.upper())
+
+    try:
+        when_obj = datetime.datetime.fromisoformat(when)
+    except Exception as e:
+        raise HTTPException(str(e))
+
+    when_obj_tz = when_obj.astimezone(pytz.utc)
+    open_window = when_obj_tz - relativedelta(days=4)
+    market_hours = market_handle.schedule(start_date=open_window, end_date=when_obj_tz)
+    return market_hours.iloc[-1]
+
+
+def _market_open_at(market: str, open_at: str):
+    market_handle = mcal.get_calendar(market.upper())
+
+    try:
+        open_at_obj = datetime.datetime.fromisoformat(open_at)
+    except Exception as e:
+        raise HTTPException(str(e))
+
+    open_at_market_tz = open_at_obj.astimezone(pytz.utc)
+    market_hours = market_handle.schedule(
+        start_date=open_at_market_tz, end_date=open_at_market_tz
+    )
+
+    if len(market_hours) == 0:
+        return False
+
+    if open_at_market_tz < market_hours.market_open[0]:
+        return False
+
+    if open_at_market_tz > market_hours.market_close[0]:
+        return False
+
+    return True
 
 
 @app.get("/symbol/", response_model=schemas.Intervals)
@@ -114,15 +217,24 @@ def list_intervals():
     return intervals
 
 
-@app.get("/symbol/{interval}/{symbol}", response_model=schemas.Intervals)
+@app.get("/{market}/symbol/{symbol}/hours", response_model=schemas.Symbol)
+def get_data(market: str, symbol: str, open_at=None, clock_id=None):
+    if symbol == "AAPL":
+        _market_open_at(market=market, open_at=open_at)
+        return {"market": market, "is_open": False, "open_at": True}
+
+
+@app.get("/symbol/{symbol}/ohlc/{interval}", response_model=schemas.Intervals)
 def get_data(interval: str, symbol: str, start="max", end="max", clock_id="realtime"):
     # get interval settings like max range
     interval_settings = _get_interval_settings(interval)
 
     # now we have some data - check if we have all the data
     try:
-        start_date = validate_date(start, interval_settings)
-        end_date = validate_date(end, interval_settings)
+        start_date = validate_date(
+            interval_settings=interval_settings, start_date=start
+        )
+        end_date = validate_date(interval_settings=interval_settings, end_date=end)
     except Exception as e:
         raise
 
@@ -130,20 +242,62 @@ def get_data(interval: str, symbol: str, start="max", end="max", clock_id="realt
         raise exceptions.EndBeforeStartError
 
     # first up work out what the current time is meant to be
-    if clock_id != "realtime":
+    if clock_id == "realtime":
+        now = datetime.datetime.now().astimezone()
+    else:
         clock = BdaClock(clock_id)
         now = clock.now
+
+    # now see if we have any of this data already cached in redis
+    redis_key = f"ohlc:{interval_settings.interval_name}:{symbol}"
+    redis_cached_data = redis.get(redis_key)
+    if redis_cached_data:
+        # cast redis to dataframe
+        df = csv_to_df(redis_cached_data)
     else:
-        now = datetime.datetime.now().astimezone()
+        # if not, see if we have it in s3
+        df = _get_s3_data(interval_settings.interval_name, symbol)
 
-    # now cast the start and end to datetimes and do basic validation of them as parameters
-    try:
-        start_date = validate_date(start, interval_settings)
-    except Exception as e:
-        raise
+    # df will either be None (if not cached in redis or S3) or a dataframe with the data we have
+    # if start is not in data
+    #    and if start is within fetchable len
+    #         then yes
+    #    else if retrievable len is beyond start of stored data (so you can at least get some)
+    #         then yes
+    #    else
+    #         then no
+    # else no
+    # if end is not in data
+    #    and if end is within fetchable len
+    #         then yes
+    #    else if retrievable len is beyond the end of stored data
+    #         then yes
+    #    else
+    #         then no
+    fetch_data = False
+    if df is None:
+        fetch_data = True
+    elif start_date not in df.index:
+        max_start = datetime.datetime.now().astimezone() - relativedelta(
+            days=interval_settings.max_history_days
+        )
+        max_start = validate_date(
+            interval_settings=interval_settings, start_date=max_start.isoformat()
+        )
+        if start_date >= max_start:
+            fetch_data = True
+        elif max_start < df.index.min():
+            fetch_data = True
 
-    # now see if we have any of this data already cached
-    df = _get_cached_data(interval_settings.interval_name, symbol)
+    if fetch_data:
+        # grab data from yf, put it in s3, load it in to redis
+        fetched = SymbolData(yf_symbol=symbol, interval=interval_settings.interval_name)
+        csv = fetched.bars.to_csv()
+        s3_path = config.data_path_template.substitute(
+            interval=interval_settings.interval_name, symbol=symbol
+        )
+        s3.put(path=s3_path, value=csv)
+        redis.set(redis_key, csv)
 
     # can we expect more data?
     last = df.index.max()

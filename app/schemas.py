@@ -11,3 +11,9 @@ class Interval(BaseModel):
 
 class Intervals(List):
     intervals: List[Interval]
+
+
+class Symbol(BaseModel):
+    open_at: bool = None
+    is_open: bool
+    exchange: str

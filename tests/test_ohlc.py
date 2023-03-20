@@ -2,6 +2,8 @@ import requests
 from datetime import date, datetime
 from app import main, exceptions
 import unittest
+import pandas as pd
+
 
 urlbase = "http://127.0.0.1:8001/symbol/"
 
@@ -18,6 +20,38 @@ class TestEndpoints(unittest.TestCase):
 
 
 class TestFunctions(unittest.TestCase):
+    def test_market_open_at_closed_date_closed_hours(self):
+        date = "2023-03-04 23:09:32.578174+00:00"
+        interval = "5m"
+        self.assertEqual(
+            main._market_open_at("nyse", date),
+            False,
+        )
+
+    def test_market_open_at_closed_date_open_hours(self):
+        date = "2023-03-04 18:09:32.578174+00:00"
+        interval = "5m"
+        self.assertEqual(
+            main._market_open_at("nyse", date),
+            False,
+        )
+
+    def test_market_open_at_open_date_open_hours(self):
+        date = "2023-03-02 18:09:32.578174+00:00"
+        interval = "5m"
+        self.assertEqual(
+            main._market_open_at("nyse", date),
+            True,
+        )
+
+    def test_market_open_at_open_date_closed_hours(self):
+        date = "2023-03-02 23:09:32.578174+00:00"
+        interval = "5m"
+        self.assertEqual(
+            main._market_open_at("nyse", date),
+            False,
+        )
+
     def test_validate_date_good_date(self):
         date = "2023-03-04 12:09:32.578174+11:00"
         interval = "5m"
@@ -73,3 +107,21 @@ class TestFunctions(unittest.TestCase):
         else:
             caught_error = False
         self.assertFalse(caught_error)
+
+    def test_snap_interval_5m_market_closed(self):
+        date = "2023-03-04 12:09:32.578174+11:00"
+        interval_str = "5m"
+        expected = pd.Timestamp("2023-03-04 08:00:00+1100")
+
+        snapped = main._snap_interval(date, interval_str, "nyse")
+
+        self.assertEqual(snapped, expected)
+
+    def test_snap_interval_5m_market_open(self):
+        date = "2023-03-02 06:09:32.578174+11:00"
+        interval_str = "5m"
+        expected = pd.Timestamp("2023-03-02 06:05:00+1100")
+
+        snapped = main._snap_interval(date, interval_str, "nyse")
+
+        self.assertEqual(snapped, expected)
