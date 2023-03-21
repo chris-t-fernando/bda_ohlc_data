@@ -17,6 +17,11 @@ class TestEndpoints(unittest.TestCase):
         result = requests.get(url)
         print("banan")
 
+    def test_get_data_start(self):
+        url = f"{urlbase}/nyse/symbol/AAPL/ohlc/5m?start=2023-03-16%2014%3A35%3A00%2B11%3A00"
+        result = requests.get(url)
+        print("banan")
+
 
 class TestFunctions(unittest.TestCase):
     def test_market_open_at_closed_date_closed_hours(self):
@@ -115,18 +120,22 @@ class TestFunctions(unittest.TestCase):
 
     def test_snap_interval_5m_market_closed(self):
         date = "2023-03-04 12:09:32.578174+11:00"
-        interval_str = "5m"
+        interval_settings = schemas.Interval(
+            interval=300, interval_name="5m", max_history_days=300
+        )
         expected = pd.Timestamp("2023-03-04 08:00:00+1100")
 
-        snapped = main._snap_to_interval(date, interval_str, "nyse")
+        snapped = main._snap_to_interval(date, interval_settings, "nyse")
 
         self.assertEqual(snapped, expected)
 
     def test_snap_interval_5m_market_open(self):
         date = "2023-03-02 06:09:32.578174+11:00"
-        interval_str = "5m"
+        interval_settings = schemas.Interval(
+            interval=300, interval_name="5m", max_history_days=300
+        )
         expected = pd.Timestamp("2023-03-02 06:05:00+1100")
 
-        snapped = main._snap_to_interval(date, interval_str, "nyse")
+        snapped = main._snap_to_interval(date, interval_settings, "nyse")
 
         self.assertEqual(snapped, expected)

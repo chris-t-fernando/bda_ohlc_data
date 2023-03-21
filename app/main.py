@@ -91,9 +91,7 @@ def validate_date(
             )
 
     # now align it to the nearest interval
-    snapped_date = _snap_to_interval(
-        str(date_obj), interval_settings.interval_name, market=market
-    )
+    snapped_date = _snap_to_interval(str(date_obj), interval_settings, market=market)
 
     return snapped_date
 
@@ -131,8 +129,13 @@ def _get_s3_data(interval_name: str, symbol: str):
 
 
 def _snap_to_interval(
-    timestamp: datetime.datetime, interval_name: str, market: str, forward=False
+    timestamp: datetime.datetime,
+    interval_settings: schemas.Interval,
+    market: str,
+    forward=False,
 ):
+    interval_name = interval_settings.interval_name
+    interval_seconds = interval_settings.interval
     timestamp_obj = datetime.datetime.fromisoformat(timestamp)
 
     # now align it to the nearest interval
@@ -156,7 +159,9 @@ def _snap_to_interval(
         last_interval = last_day.market_close
         # convert this to the original timezone
         last_interval_tz = last_interval.astimezone(timestamp_obj.tzname())
-        return last_interval_tz
+        delta = relativedelta(seconds=interval_seconds)
+        last_record_before_close = last_interval_tz - delta
+        return last_record_before_close
 
 
 def _market_last_open_day(market: str, when: str):
@@ -232,7 +237,7 @@ def get_market_hours(market: str, clock_id=None):
     return {"market": market, "is_open": open}
 
 
-@app.get("/{market}/symbol/{symbol}/ohlc/{interval}", response_model=schemas.Intervals)
+@app.get("/{market}/symbol/{symbol}/ohlc/{interval}", response_model=dict)
 def get_data(
     market: str, interval: str, symbol: str, start="max", end="max", clock_id=None
 ):
@@ -303,13 +308,12 @@ def get_data(
         elif max_start < df.index.min():
             fetch_data = True
 
-    latest_record = _snap_to_interval(
-        now.isoformat(), interval_settings.interval_name, market=market
-    )
+    latest_record = _snap_to_interval(now.isoformat(), interval_settings, market=market)
     if latest_record > df.index.max():
         # there is more to get
         fetch_data = True
 
+    # TODO merge bars - some logic about handling gaps
     if fetch_data:
         # grab data from yf, put it in s3, load it in to redis
         fetched = SymbolData(yf_symbol=symbol, interval=interval_settings.interval_name)
@@ -320,18 +324,11 @@ def get_data(
         s3.put(path=s3_path, value=csv)
         redis.set(redis_key, csv)
 
-    # can we expect more data?
-    last = df.index.max()
-    next = last + relativedelta(seconds=interval_settings.interval)
-    if next < now:
-        # there is more data
-        ...
-        # TODO need to hook this up to redis so that there is statefulness of the data
-
-    print("ba")
-
-    zz = s3.put("abc", "abc")
-    return
+    # trim down to just what was requested
+    df_trim = df.loc[(df.index >= start_date) & (df.index <= end_date)]
+    df_str = df_trim.to_json(date_format="iso")
+    df_json = json.loads(df_str)
+    return df_json
 
 
 if __name__ == "__main__":
