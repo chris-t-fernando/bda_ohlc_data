@@ -4,3 +4,6 @@ git+https://github.com/chris-t-fernando/parameter-store.git
 requests
 git+https://github.com/chris-t-fernando/symbol-cache.git 
 git+https://github.com/chris-t-fernando/bda_clock_client.git
+pandas-market-calendars
+redis
+https://github.com/jonson/bta-lib/archive/619620c6720435f8848aff01c1e747df934f6ee1.zip

@@ -11,6 +11,8 @@ import redis
 from symbol import SymbolData
 import pandas_market_calendars as mcal
 import pytz
+import time
+from io import StringIO
 
 # from . import crud, deps, models, schemas, security
 # from app
@@ -23,6 +25,10 @@ else:
 
 # redit config
 pool = redis.ConnectionPool(host="localhost", port=6379, db=0, decode_responses=True)
+
+pool = redis.ConnectionPool(
+    host="host.docker.internal", port=6379, db=0, decode_responses=True
+)
 redis = redis.Redis(connection_pool=pool)
 
 
@@ -43,8 +49,6 @@ s3 = S3("mfers-tabot")
 
 
 def csv_to_df(csv_str: str):
-    from io import StringIO
-
     csv = StringIO(csv_str)
     df = pd.read_csv(csv, sep=",", index_col=0, parse_dates=True)
     return df
@@ -56,6 +60,8 @@ def validate_date(
     start_date: str = None,
     end_date: str = None,
 ):
+    ex_now = time.time()
+
     date = start_date if start_date else end_date
     if not start_date and not end_date:
         raise ValueError(
@@ -89,10 +95,12 @@ def validate_date(
             raise exceptions.InvalidDate(
                 f"Specified start date {date} is timezone naive"
             )
-
+    print(f"30 {time.time() - ex_now}")
+    ex_now = time.time()
     # now align it to the nearest interval
     snapped_date = _snap_to_interval(str(date_obj), interval_settings, market=market)
-
+    print(f"31 {time.time() - ex_now}")
+    ex_now = time.time()
     return snapped_date
 
 
@@ -151,11 +159,16 @@ def _snap_to_interval(
     elif interval_name == "1d":
         out_date = out_date.replace(minute=0, hour=0)
 
+    ex_now = time.time()
     # is the market open at this time?
     if _market_open_at(market, str(out_date)):
+        print(f"40 {time.time() - ex_now}")
+        ex_now = time.time()
         return out_date
     else:
         last_day = _market_last_open_day(market, str(out_date))
+        print(f"41 {time.time() - ex_now}")
+        ex_now = time.time()
         last_interval = last_day.market_close
         # convert this to the original timezone
         last_interval_tz = last_interval.astimezone(timestamp_obj.tzname())
@@ -165,8 +178,10 @@ def _snap_to_interval(
 
 
 def _market_last_open_day(market: str, when: str):
+    ex_now = time.time()
     market_handle = mcal.get_calendar(market.upper())
-
+    print(f"50 {time.time() - ex_now}")
+    ex_now = time.time()
     try:
         when_obj = datetime.datetime.fromisoformat(when)
     except Exception as e:
@@ -175,15 +190,22 @@ def _market_last_open_day(market: str, when: str):
     when_obj_tz = when_obj.astimezone(pytz.utc)
     open_window = when_obj_tz - relativedelta(days=4)
     market_hours = market_handle.schedule(start_date=open_window, end_date=when_obj_tz)
+    print(f"51 {time.time() - ex_now}")
+    ex_now = time.time()
     return market_hours.loc[market_hours.market_open < when_obj].iloc[-1]
     # return market_hours.iloc[-1]
 
 
 def _market_open_at(market: str, open_at: str):
+    ex_now = time.time()
     market_handle = mcal.get_calendar(market.upper())
+    print(f"20 {time.time() - ex_now}")
+    ex_now = time.time()
 
     try:
         open_at_obj = datetime.datetime.fromisoformat(open_at)
+        print(f"21 {time.time() - ex_now}")
+        ex_now = time.time()
     except Exception as e:
         raise HTTPException(str(e))
 
@@ -191,6 +213,8 @@ def _market_open_at(market: str, open_at: str):
     market_hours = market_handle.schedule(
         start_date=open_at_market_tz, end_date=open_at_market_tz
     )
+    print(f"22 {time.time() - ex_now}")
+    ex_now = time.time()
 
     if len(market_hours) == 0:
         return False
@@ -241,17 +265,23 @@ def get_market_hours(market: str, clock_id=None):
 def get_data(
     market: str, interval: str, symbol: str, start="max", end="max", clock_id=None
 ):
+    ex_now = time.time()
     # get interval settings like max range
     interval_settings = _get_interval_settings(interval)
-
+    print(f"1  {time.time() - ex_now}")
+    ex_now = time.time()
     # now we have some data - check if we have all the data
     try:
         start_date = validate_date(
             interval_settings=interval_settings, start_date=start, market=market
         )
+        print(f"2  {time.time() - ex_now}")
+        ex_now = time.time()
         end_date = validate_date(
             interval_settings=interval_settings, end_date=end, market=market
         )
+        print(f"3  {time.time() - ex_now}")
+        ex_now = time.time()
 
     except Exception as e:
         raise
@@ -261,19 +291,33 @@ def get_data(
 
     # first up work out what the current time is meant to be
     if clock_id:
+        print(f"4  {time.time() - ex_now}")
+        ex_now = time.time()
         now = BdaClock(clock_id).now
     else:
         now = datetime.datetime.now().astimezone()
+        print(f"5  {time.time() - ex_now}")
+        ex_now = time.time()
 
     # now see if we have any of this data already cached in redis
     redis_key = f"ohlc:{interval_settings.interval_name}:{symbol}"
+    print(f"6  {time.time() - ex_now}")
+    ex_now = time.time()
+    print(f"7  {time.time() - ex_now}")
+    ex_now = time.time()
     redis_cached_data = redis.get(redis_key)
+    print(f"8  {time.time() - ex_now}")
+    ex_now = time.time()
     if redis_cached_data:
         # cast redis to dataframe
         df = csv_to_df(redis_cached_data)
+        print(f"9  {time.time() - ex_now}")
+        ex_now = time.time()
     else:
         # if not, see if we have it in s3
         df = _get_s3_data(interval_settings.interval_name, symbol)
+        print(f"10 {time.time() - ex_now}")
+        ex_now = time.time()
 
     # df will either be None (if not cached in redis or S3) or a dataframe with the data we have
     # if start is not in data
@@ -303,12 +347,16 @@ def get_data(
             market=market,
             start_date=max_start.isoformat(),
         )
+        print(f"11 {time.time() - ex_now}")
+        ex_now = time.time()
         if start_date >= max_start:
             fetch_data = True
         elif max_start < df.index.min():
             fetch_data = True
 
     latest_record = _snap_to_interval(now.isoformat(), interval_settings, market=market)
+    print(f"12 {time.time() - ex_now}")
+    ex_now = time.time()
     if latest_record > df.index.max():
         # there is more to get
         fetch_data = True
@@ -317,17 +365,27 @@ def get_data(
     if fetch_data:
         # grab data from yf, put it in s3, load it in to redis
         fetched = SymbolData(yf_symbol=symbol, interval=interval_settings.interval_name)
+        print(f"13 {time.time() - ex_now}")
+        ex_now = time.time()
         csv = fetched.bars.to_csv()
+        print(f"14 {time.time() - ex_now}")
+        ex_now = time.time()
         s3_path = config.data_path_template.substitute(
             interval=interval_settings.interval_name, symbol=symbol
         )
         s3.put(path=s3_path, value=csv)
+        print(f"15 {time.time() - ex_now}")
+        ex_now = time.time()
         redis.set(redis_key, csv)
+        print(f"16 {time.time() - ex_now}")
+        ex_now = time.time()
 
     # trim down to just what was requested
     df_trim = df.loc[(df.index >= start_date) & (df.index <= end_date)]
     df_str = df_trim.to_json(date_format="iso")
     df_json = json.loads(df_str)
+    print(f"17 {time.time() - ex_now}")
+    ex_now = time.time()
     return df_json
 
 
