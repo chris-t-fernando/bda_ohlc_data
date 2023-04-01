@@ -1,141 +1,75 @@
 import requests
 from datetime import date, datetime
-from app import main, exceptions, schemas
 import unittest
 import pandas as pd
+from persistent_ohlc_client import PersistentOhlcClient
+import json
 
-urlbase = "http://127.0.0.1:8001"
-
-
-class TestEndpoints(unittest.TestCase):
-    def test_intervals(self):
-        url = f"{urlbase}"
-        return requests.get(url)
-
-    def test_get_data(self):
-        url = f"{urlbase}/nyse/symbol/AAPL/ohlc/5m"
-        result = requests.get(url)
-        print("banan")
-
-    def test_get_data_start(self):
-        url = f"{urlbase}/nyse/symbol/AAPL/ohlc/5m?start=2023-03-16%2014%3A35%3A00%2B11%3A00"
-        result = requests.get(url)
-        print("banan")
+urlbase = "http://127.0.0.1:8002"
+macd_columns = set(
+    [
+        "macd_signal",
+        "macd_macd",
+        "macd_cycle",
+        "macd_histogram",
+        "macd_above_signal",
+        "macd_crossover",
+    ]
+)
 
 
-class TestFunctions(unittest.TestCase):
-    def test_market_open_at_closed_date_closed_hours(self):
-        date = "2023-03-04 23:09:32.578174+00:00"
-        interval = "5m"
-        self.assertEqual(
-            main._market_open_at("nyse", date),
-            False,
-        )
+class TestClient(unittest.TestCase):
+    def test_count(self):
+        count = 10
+        client = PersistentOhlcClient()
+        query = client.get_ohlc("BTC-USD", count=count)
+        self.assertEqual(len(query), count)
 
-    def test_market_open_at_closed_date_open_hours(self):
-        date = "2023-03-04 18:09:32.578174+00:00"
-        interval = "5m"
-        self.assertEqual(
-            main._market_open_at("nyse", date),
-            False,
-        )
-
-    def test_market_open_at_open_date_open_hours(self):
-        date = "2023-03-02 18:09:32.578174+00:00"
-        interval = "5m"
-        self.assertEqual(
-            main._market_open_at("nyse", date),
-            True,
-        )
-
-    def test_market_open_at_open_date_closed_hours(self):
-        date = "2023-03-02 23:09:32.578174+00:00"
-        interval = "5m"
-        self.assertEqual(
-            main._market_open_at("nyse", date),
-            False,
-        )
-
-    def test_validate_date_good_date(self):
-        interval_settings = schemas.Interval(
-            interval=300, interval_name="5m", max_history_days=300
-        )
-        date = "2023-03-04 12:09:32.578174+11:00"
-        market = "nyse"
-        validated_date = main.validate_date(
-            interval_settings=interval_settings, start_date=date, market=market
-        )
-        self.assertEqual(
-            validated_date,
-            datetime.fromisoformat(date).astimezone(),
-        )
-
-    def test_validate_date_bad_date(self):
-        date = "a2023-03-04 12:09:32.578174+11:00"
-        interval = "5m"
+    def test_bad_symbol(self):
+        client = PersistentOhlcClient()
+        fake_symbol = "some fake symbol"
+        error_triggered = False
         try:
-            main.validate_date(date, interval)
-        except exceptions.InvalidDate as e:
-            caught_error = True
-        else:
-            caught_error = False
+            query = client.get_ohlc(fake_symbol)
+        except requests.exceptions.HTTPError as e:
+            json_response = json.loads(e.response.text)
+            if "detail" in json_response.keys():
+                if json_response["detail"] == f"Symbol {fake_symbol} not found":
+                    error_triggered = True
 
-        self.assertTrue(caught_error)
+        self.assertEqual(True, error_triggered)
 
-    def test_validate_date_bad_interval(self):
-        date = "2023-03-04 12:09:32.578174+11:00"
-        interval = "banana"
+        with self.assertRaises(requests.exceptions.HTTPError):
+            query = client.get_ohlc(fake_symbol)
+
+    def test_good_symbol(self):
+        client = PersistentOhlcClient()
+        query = client.get_ohlc("BTC-USD")
+        self.assertTrue(len(query) > 0)
+
+    def test_ta_str(self):
+        client = PersistentOhlcClient()
+        query = client.get_ohlc("BTC-USD", ta="MacdTA")
+
+        diff_len = len(macd_columns.difference(query.columns))
+        self.assertEquals(diff_len, 0)
+
+    def test_ta_macd(self):
+        client = PersistentOhlcClient()
+        query = client.get_ohlc("BTC-USD", ta=["MacdTA"])
+        diff_len = len(macd_columns.difference(query.columns))
+        self.assertEquals(diff_len, 0)
+
+    def test_ta_fake(self):
+        client = PersistentOhlcClient()
+        fake_ta = "some fake TA"
+        error_triggered = False
         try:
-            main.validate_date(date, interval)
-        except exceptions.InvalidIntervalError as e:
-            caught_error = True
-        else:
-            caught_error = False
+            query = client.get_ohlc("BTC-USD", ta=fake_ta)
+        except requests.exceptions.HTTPError as e:
+            json_response = json.loads(e.response.text)
+            if "detail" in json_response.keys():
+                if json_response["detail"] == f"TA function {fake_ta} was not found":
+                    error_triggered = True
 
-        self.assertTrue(caught_error)
-
-    def test_validate_date_good_interval(self):
-        date = "2023-03-04 12:09:32.578174+11:00"
-        interval = "1m"
-        try:
-            main.validate_date(date, interval)
-        except exceptions.InvalidIntervalError as e:
-            caught_error = True
-        else:
-            caught_error = False
-
-        self.assertFalse(caught_error)
-
-    def test_validate_date_none_specified(self):
-        date = "max"
-        interval = "5m"
-
-        try:
-            main.validate_date(date, interval)
-        except Exception as e:
-            caught_error = True
-        else:
-            caught_error = False
-        self.assertFalse(caught_error)
-
-    def test_snap_interval_5m_market_closed(self):
-        date = "2023-03-04 12:09:32.578174+11:00"
-        interval_settings = schemas.Interval(
-            interval=300, interval_name="5m", max_history_days=300
-        )
-        expected = pd.Timestamp("2023-03-04 08:00:00+1100")
-
-        snapped = main._snap_to_interval(date, interval_settings, "nyse")
-
-        self.assertEqual(snapped, expected)
-
-    def test_snap_interval_5m_market_open(self):
-        date = "2023-03-02 06:09:32.578174+11:00"
-        interval_settings = schemas.Interval(
-            interval=300, interval_name="5m", max_history_days=300
-        )
-        expected = pd.Timestamp("2023-03-02 06:05:00+1100")
-
-        snapped = main._snap_to_interval(date, interval_settings, "nyse")
-
-        self.assertEqual(snapped, expected)
+        self.assertEqual(True, error_triggered)

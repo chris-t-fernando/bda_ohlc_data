@@ -8,7 +8,7 @@ import datetime
 from dateutil.relativedelta import relativedelta
 import pandas as pd
 import redis
-from symbol_cache import Symbol, MacdTA
+from symbol_cache import Symbol, MacdTA, SymbolError, TANotFound
 import time
 
 # from . import crud, deps, models, schemas, security
@@ -53,23 +53,32 @@ active_symbols = dict()
 
 
 @app.get("/symbols/{symbol}/ohlc/{interval}")
-def get_market_hours(
+def get_ohlc_data(
     symbol: str,
     interval: str,
-    start=None,
-    end=None,
+    start: str = None,
+    end: str = None,
+    count: int = None,
     ta: List[str] = Query(None),
 ):
-    ex_now = time.time()
+    # ex_now = time.time()
     if symbol not in active_symbols.keys():
         active_symbols[symbol] = dict()
 
     if interval not in active_symbols[symbol].keys():
-        active_symbols[symbol][interval] = Symbol(symbol, interval=interval)
+        try:
+            active_symbols[symbol][interval] = Symbol(symbol, interval=interval)
+        except SymbolError as e:
+            raise HTTPException(status_code=404, detail=f"Symbol {symbol} not found")
 
     if ta:
         for algo in ta:
-            active_symbols[symbol][interval].ohlc.apply_ta(algo)
+            try:
+                active_symbols[symbol][interval].ohlc.apply_ta(algo)
+            except TANotFound as e:
+                raise HTTPException(
+                    status_code=404, detail=f"TA function {algo} was not found"
+                )
 
     ret_df = active_symbols[symbol][interval].ohlc.bars
     if start:
@@ -78,10 +87,13 @@ def get_market_hours(
     if end:
         ret_df = ret_df.loc[ret_df.index <= end]
 
+    if count:
+        ret_df = ret_df[-count:]
+
     response = Response(
         ret_df.to_json(date_format="iso"), media_type="application/json"
     )
-    print(f"\tJSON LOAD IN {time.time() - ex_now}")
+    # print(f"\tJSON LOAD IN {time.time() - ex_now}")
     return response
 
     # js_return = json.loads(ret_df.to_json(date_format="iso"))

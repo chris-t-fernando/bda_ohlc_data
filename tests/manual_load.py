@@ -1,10 +1,10 @@
 import asyncio
 import time
-import requests
 from urllib.parse import quote_plus
+import requests
 
-
-since = quote_plus("2023-03-29 01:04:31.850056+11:00")
+start_str = "2023-03-29 01:04:31.850056+11:00"
+since = quote_plus(start_str)
 total_runs = 1000
 
 
@@ -29,4 +29,4 @@ if __name__ == "__main__":
     asyncio.run(parallel())
     duration = time.time() - now
     avg = total_runs / duration
-    print(f"Finished run in {duration}, average of {avg:.2f} runs per second")
+    print(f"Finished run in {duration}, average of {avg:.1f} runs per second")
