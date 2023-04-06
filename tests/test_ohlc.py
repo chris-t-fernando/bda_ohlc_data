@@ -16,6 +16,8 @@ macd_columns = set(
         "macd_crossover",
     ]
 )
+fake_symbol = "some fake symbol"
+fake_ta = "some fake TA"
 
 
 class TestClient(unittest.TestCase):
@@ -27,7 +29,6 @@ class TestClient(unittest.TestCase):
 
     def test_bad_symbol(self):
         client = PersistentOhlcClient()
-        fake_symbol = "some fake symbol"
         error_triggered = False
         try:
             query = client.get_ohlc(fake_symbol)
@@ -62,7 +63,6 @@ class TestClient(unittest.TestCase):
 
     def test_ta_fake(self):
         client = PersistentOhlcClient()
-        fake_ta = "some fake TA"
         error_triggered = False
         try:
             query = client.get_ohlc("BTC-USD", ta=fake_ta)
