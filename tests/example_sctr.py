@@ -106,7 +106,7 @@ def fetch_price_data(symbols: str):
 
 c = PersistentOhlcClient()
 
-symbols = [
+crytpo_symbols = [
     "BTC-USD",
     "AVAX-USD",
     "ETH-USD",
@@ -120,8 +120,21 @@ symbols = [
     "BNB-USD",
     "ATOM-USD",
     "SHIB-USD",
+    "ADA-USD",
+    "SOL-USD",
+    "LTC-USD",
+    "TRX-USD",
+    "DAI-USD",
+    "WBTC-USD",
+    "LINK-USD",
+    "LEO-USD",
+    "XMR-USD",
+    "ETC-USD",
+    "TON-USD",
+    "OKB-USD",
 ]
-symbols = [
+
+nyse_symbols = [
     "ABNB",
     "ADBE",
     "ADI",
@@ -222,10 +235,194 @@ symbols = [
     "ZS",
 ]
 
+asx_symbols = [
+    "A2M.AX",
+    "AAA.AX",
+    # "ABC.AX",
+    "ABP.AX",
+    "AFI.AX",
+    "AGL.AX",
+    "AIA.AX",
+    "ALD.AX",
+    "ALL.AX",
+    "ALQ.AX",
+    "ALU.AX",
+    "ALX.AX",
+    # "AMC.AX",
+    "AMP.AX",
+    # "ANN.AX",
+    "ANZ.AX",
+    "APA.AX",
+    "APE.AX",
+    "APX.AX",
+    "ARB.AX",
+    "ARG.AX",
+    "ASX.AX",
+    "AWC.AX",
+    "AZJ.AX",
+    "BAP.AX",
+    "BEN.AX",
+    "BGA.AX",
+    "BHP.AX",
+    "BKW.AX",
+    "BLD.AX",
+    "BOQ.AX",
+    "BPT.AX",
+    "BRG.AX",
+    "BSL.AX",
+    "BWP.AX",
+    "BXB.AX",
+    "CAR.AX",
+    "CBA.AX",
+    "CCP.AX",
+    "CDA.AX",
+    "CGF.AX",
+    "CHC.AX",
+    "CHN.AX",
+    "CIA.AX",
+    "CLW.AX",
+    "CMW.AX",
+    "CNU.AX",
+    "COH.AX",
+    "COL.AX",
+    "CPU.AX",
+    "CQR.AX",
+    "CSL.AX",
+    "CSR.AX",
+    "CTD.AX",
+    "CWY.AX",
+    "DEG.AX",
+    "DHG.AX",
+    "DMP.AX",
+    "DOW.AX",
+    "DRR.AX",
+    "DXS.AX",
+    "EBO.AX",
+    "ELD.AX",
+    "EML.AX",
+    "EVN.AX",
+    "EVT.AX",
+    "FBU.AX",
+    "FLT.AX",
+    "FMG.AX",
+    "FPH.AX",
+    "GMG.AX",
+    "GNE.AX",
+    "GOZ.AX",
+    "GPT.AX",
+    "HLS.AX",
+    "HVN.AX",
+    "IAG.AX",
+    "IEL.AX",
+    "IFL.AX",
+    "IFT.AX",
+    "IGO.AX",
+    "ILU.AX",
+    "IOO.AX",
+    "IOZ.AX",
+    "IPL.AX",
+    "IRE.AX",
+    "IVV.AX",
+    "JBH.AX",
+    "JHX.AX",
+    "LFG.AX",
+    "LFS.AX",
+    "LLC.AX",
+    "LNK.AX",
+    "LYC.AX",
+    "MEZ.AX",
+    "MFG.AX",
+    "MGF.AX",
+    "MGOC.AX",
+    "MGR.AX",
+    "MIN.AX",
+    "MP1.AX",
+    "MPL.AX",
+    "MQG.AX",
+    "MTS.AX",
+    "NAB.AX",
+    "NCM.AX",
+    "NEC.AX",
+    "NHF.AX",
+    "NIC.AX",
+    "NSR.AX",
+    "NST.AX",
+    "NUF.AX",
+    "NWL.AX",
+    "NXT.AX",
+    "ORA.AX",
+    "ORG.AX",
+    "ORI.AX",
+    "OZL.AX",
+    "PBH.AX",
+    "PLS.AX",
+    "PME.AX",
+    "PMGOLD.AX",
+    "PMV.AX",
+    "PNI.AX",
+    "PNV.AX",
+    "PPT.AX",
+    "PTM.AX",
+    "QAN.AX",
+    "QBE.AX",
+    "QUB.AX",
+    "REA.AX",
+    "REH.AX",
+    "RHC.AX",
+    "RIO.AX",
+    "RMD.AX",
+    "RRL.AX",
+    "RWC.AX",
+    "S32.AX",
+    "SCG.AX",
+    "SDF.AX",
+    "SEK.AX",
+    "SGM.AX",
+    "SGP.AX",
+    "SGR.AX",
+    "SHL.AX",
+    "SKC.AX",
+    "SNZ.AX",
+    "SOL.AX",
+    "SPK.AX",
+    "STO.AX",
+    "STW.AX",
+    "SUL.AX",
+    "SUN.AX",
+    "SVW.AX",
+    "TAH.AX",
+    "TCL.AX",
+    "TLS.AX",
+    "TNE.AX",
+    "TPG.AX",
+    "TWE.AX",
+    "TYR.AX",
+    "VAP.AX",
+    "VAS.AX",
+    "VCX.AX",
+    "VEA.AX",
+    "VEU.AX",
+    "VGS.AX",
+    "VTS.AX",
+    "VUK.AX",
+    "WAM.AX",
+    "WBC.AX",
+    "WEB.AX",
+    "WES.AX",
+    "WOR.AX",
+    "WOW.AX",
+    "WPR.AX",
+    "WTC.AX",
+    "XRO.AX",
+    "YAL.AX",
+    "ZIM.AX",
+]
+
+symbols = asx_symbols
+
 data = fetch_price_data(symbols)
 end_date = data[symbols[0]].iloc[-1].name
 start_date = end_date - relativedelta(days=250)
-assess_date = start_date
 
 sctr_df = pd.DataFrame(columns=["datetime", "symbol", "IND_SCORE"])
 
@@ -235,33 +432,21 @@ for s, price_df in data.items():
     price_df = calculate_weights(price_df)
     price_df = calculate_sctr(price_df)
 
-    while assess_date <= end_date:
-        if assess_date in price_df.index:
-            # print(f"{assess_date}")
-            row = pd.DataFrame(
-                {
-                    "datetime": assess_date,
-                    "symbol": [s],
-                    "IND_SCORE": [price_df["IND_SCORE"].loc[assess_date]],
-                    "rank": -1,
-                }
-            )
-            sctr_df = pd.concat([sctr_df, row], axis=0, ignore_index=True)
-        else:
-            wd = assess_date.weekday()
-            if wd != 5 and wd != 6:
-                ...
-        # can't do it this way because of goddamn daylight savings
-        # assess_date += relativedelta(days=1)
-        this_iloc = price_df.index.get_loc(assess_date)
-        next_iloc = this_iloc + 1
-        try:
-            assess_date = price_df.index[next_iloc]
-        except:
-            if assess_date + relativedelta(days=1) > end_date:
-                break
-            continue
-    assess_date = start_date
+    start_idx = price_df.index.get_indexer([start_date], method="nearest")[0]
+    end_idx = price_df.index.get_indexer([end_date], method="nearest")[0]
+
+    for idx in range(start_idx, end_idx):
+        assess_date = price_df.index[idx]
+        row = pd.DataFrame(
+            {
+                "datetime": assess_date,
+                "symbol": [s],
+                "IND_SCORE": [price_df["IND_SCORE"].loc[assess_date]],
+                "rank": -1,
+            }
+        )
+        sctr_df = pd.concat([sctr_df, row], axis=0, ignore_index=True)
+
 
 col_index = pd.MultiIndex.from_product(
     [symbols, ["sctr"]], names=["symbol", "sctr_col"]
@@ -279,7 +464,38 @@ for s in sctr_df.symbol.unique():
 idx = pd.IndexSlice
 ranks = ndf.loc[slice(None), idx[:, "sctr"]].rank(axis=1, ascending=False)
 ranks = ranks.rename(columns={"sctr": "rank"})
+velocity = ranks.loc[slice(None), idx[:, "rank"]].rank(
+    axis=1, ascending=False
+).shift() - ranks.loc[slice(None), idx[:, "rank"]].rank(axis=1, ascending=False)
+velocity = velocity.rename(columns={"rank": "velocity"})
+
+one_day_increase = (
+    ndf.loc[slice(None), idx[:, "close"]]
+    - ndf.loc[slice(None), idx[:, "close"]].shift()
+    > 0
+)
+one_day_increase = one_day_increase.rename(columns={"close": "one_day_increase"})
+two_day_increase = (
+    ndf.loc[slice(None), idx[:, "close"]].shift()
+    - ndf.loc[slice(None), idx[:, "close"]].shift(2)
+    > 0
+)
+two_day_increase = two_day_increase.rename(columns={"close": "two_day_increase"})
+
+
 nndf = ndf.join(ranks)
+nndf = nndf.join(velocity)
+nndf = nndf.join(one_day_increase)
+nndf = nndf.join(two_day_increase)
+
+consecutive_increase = np.logical_and(
+    nndf.loc[:, idx[:, "one_day_increase"]], nndf.loc[:, idx[:, "two_day_increase"]]
+)
+consecutive_increase = consecutive_increase.rename(
+    columns={"one_day_increase": "consecutive_increase"}
+)
+nndf = nndf.join(consecutive_increase)
+
 nndf = nndf.reindex(sorted(nndf.columns), axis=1)
 nndf = nndf.dropna()
 nndf.to_csv("nndf.csv")

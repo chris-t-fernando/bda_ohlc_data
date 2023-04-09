@@ -184,7 +184,7 @@ class BackTestTimeManager(ITimeManager):
         return 0
 
 
-symbols = [
+crytpo_symbols = [
     "BTC-USD",
     "AVAX-USD",
     "ETH-USD",
@@ -198,8 +198,21 @@ symbols = [
     "BNB-USD",
     "ATOM-USD",
     "SHIB-USD",
+    "ADA-USD",
+    "SOL-USD",
+    "LTC-USD",
+    "TRX-USD",
+    "DAI-USD",
+    "WBTC-USD",
+    "LINK-USD",
+    "LEO-USD",
+    "XMR-USD",
+    "ETC-USD",
+    "TON-USD",
+    "OKB-USD",
 ]
-symbols = [
+
+nyse_symbols = [
     "ABNB",
     "ADBE",
     "ADI",
@@ -299,6 +312,195 @@ symbols = [
     "ZM",
     "ZS",
 ]
+
+asx_symbols = [
+    "A2M.AX",
+    "AAA.AX",
+    "ABC.AX",
+    "ABP.AX",
+    "AFI.AX",
+    "AGL.AX",
+    "AIA.AX",
+    "ALD.AX",
+    "ALL.AX",
+    "ALQ.AX",
+    "ALU.AX",
+    "ALX.AX",
+    "AMC.AX",
+    "AMP.AX",
+    "ANN.AX",
+    "ANZ.AX",
+    "APA.AX",
+    "APE.AX",
+    "APX.AX",
+    "ARB.AX",
+    "ARG.AX",
+    "ASX.AX",
+    "AWC.AX",
+    "AZJ.AX",
+    "BAP.AX",
+    "BEN.AX",
+    "BGA.AX",
+    "BHP.AX",
+    "BKW.AX",
+    "BLD.AX",
+    "BOQ.AX",
+    "BPT.AX",
+    "BRG.AX",
+    "BSL.AX",
+    "BWP.AX",
+    "BXB.AX",
+    "CAR.AX",
+    "CBA.AX",
+    "CCP.AX",
+    "CDA.AX",
+    "CGF.AX",
+    "CHC.AX",
+    "CHN.AX",
+    "CIA.AX",
+    "CLW.AX",
+    "CMW.AX",
+    "CNU.AX",
+    "COH.AX",
+    "COL.AX",
+    "CPU.AX",
+    "CQR.AX",
+    "CSL.AX",
+    "CSR.AX",
+    "CTD.AX",
+    "CWY.AX",
+    "DEG.AX",
+    "DHG.AX",
+    "DMP.AX",
+    "DOW.AX",
+    "DRR.AX",
+    "DXS.AX",
+    "EBO.AX",
+    "ELD.AX",
+    "EML.AX",
+    "EVN.AX",
+    "EVT.AX",
+    "FBU.AX",
+    "FLT.AX",
+    "FMG.AX",
+    "FPH.AX",
+    "GMG.AX",
+    "GNE.AX",
+    "GOZ.AX",
+    "GPT.AX",
+    "HLS.AX",
+    "HVN.AX",
+    "IAG.AX",
+    "IEL.AX",
+    "IFL.AX",
+    "IFT.AX",
+    "IGO.AX",
+    "ILU.AX",
+    "IOO.AX",
+    "IOZ.AX",
+    "IPL.AX",
+    "IRE.AX",
+    "IVV.AX",
+    "JBH.AX",
+    "JHX.AX",
+    "LFG.AX",
+    "LFS.AX",
+    "LLC.AX",
+    "LNK.AX",
+    "LYC.AX",
+    "MEZ.AX",
+    "MFG.AX",
+    "MGF.AX",
+    "MGOC.AX",
+    "MGR.AX",
+    "MIN.AX",
+    "MP1.AX",
+    "MPL.AX",
+    "MQG.AX",
+    "MTS.AX",
+    "NAB.AX",
+    "NCM.AX",
+    "NEC.AX",
+    "NHF.AX",
+    "NIC.AX",
+    "NSR.AX",
+    "NST.AX",
+    "NUF.AX",
+    "NWL.AX",
+    "NXT.AX",
+    "ORA.AX",
+    "ORG.AX",
+    "ORI.AX",
+    "OZL.AX",
+    "PBH.AX",
+    "PLS.AX",
+    "PME.AX",
+    "PMGOLD.AX",
+    "PMV.AX",
+    "PNI.AX",
+    "PNV.AX",
+    "PPT.AX",
+    "PTM.AX",
+    "QAN.AX",
+    "QBE.AX",
+    "QUB.AX",
+    "REA.AX",
+    "REH.AX",
+    "RHC.AX",
+    "RIO.AX",
+    "RMD.AX",
+    "RRL.AX",
+    "RWC.AX",
+    "S32.AX",
+    "SCG.AX",
+    "SDF.AX",
+    "SEK.AX",
+    "SGM.AX",
+    "SGP.AX",
+    "SGR.AX",
+    "SHL.AX",
+    "SKC.AX",
+    "SNZ.AX",
+    "SOL.AX",
+    "SPK.AX",
+    "STO.AX",
+    "STW.AX",
+    "SUL.AX",
+    "SUN.AX",
+    "SVW.AX",
+    "TAH.AX",
+    "TCL.AX",
+    "TLS.AX",
+    "TNE.AX",
+    "TPG.AX",
+    "TWE.AX",
+    "TYR.AX",
+    "VAP.AX",
+    "VAS.AX",
+    "VCX.AX",
+    "VEA.AX",
+    "VEU.AX",
+    "VGS.AX",
+    "VTS.AX",
+    "VUK.AX",
+    "WAM.AX",
+    "WBC.AX",
+    "WEB.AX",
+    "WES.AX",
+    "WOR.AX",
+    "WOW.AX",
+    "WPR.AX",
+    "WTC.AX",
+    "XRO.AX",
+    "YAL.AX",
+    "ZIM.AX",
+]
+
+symbols = asx_symbols
+
+buy_model = "highest"
+winner_count = 0
+loser_count = 0
 for s in symbols:
     client.get_ohlc(s, interval="1d")
 
@@ -308,7 +510,7 @@ tm = BackTestTimeManager(interval="1d")
 tm.add_symbols(symbols)
 
 broker = BackTestAPI(
-    time_manager=tm, back_testing=True, buy_metric="Close", sell_metric="High"
+    time_manager=tm, back_testing=True, buy_metric="Close", sell_metric="Close"
 )
 
 sctr_data = pd.read_csv(
@@ -319,13 +521,15 @@ tm.now = sctr_data.index[1]
 top_25 = round(len(symbols) * 0.4)
 
 active_positions = {}
-gains = 0
+total_gains = 0
 yesterday_top_25 = None
 
 # while tm.now < sctr_data.index[-1]:
 for now in sctr_data.index:
     tm.now = now
     yesterday_iloc = sctr_data.index.get_loc(now) - 1
+    if yesterday_iloc == -1:
+        continue
     yesterday = sctr_data.index[yesterday_iloc]
     if yesterday_top_25 is None:
         yesterday_top_25 = (
@@ -350,8 +554,6 @@ for now in sctr_data.index:
 
     positions = broker.list_positions()
     for s in exited:
-        if s == "KLAC":
-            ...
         for p in positions:
             if p.symbol == s:
                 # got one that has exited
@@ -364,39 +566,137 @@ for now in sctr_data.index:
                 sell_order = broker.sell_order_market(
                     s, units=active_positions[s].filled_unit_quantity
                 )
-                updated_order = broker.get_order(sell_order.order_id)
+                sell_order = broker.get_order(sell_order.order_id)
 
                 text = (
-                    "WINNER"
-                    if buy_value < updated_order.filled_total_value
-                    else "LOSER"
+                    "WINNER" if buy_value < sell_order.filled_total_value else "LOSER"
                 )
-                diff = updated_order.filled_total_value - buy_value
-                gains += diff
+                if buy_value < sell_order.filled_total_value:
+                    winner_count += 1
+                else:
+                    loser_count += 1
+
+                diff = sell_order.filled_total_value - buy_value
+                total_gains += diff
+
+                bought_on = active_positions[s].create_time
+                held_days = (now - bought_on).days
+                pct = (sell_order.filled_total_value / buy_value) * 100 - 100
+                pct_win = winner_count / (winner_count + loser_count) * 100
+
                 print(
-                    f"{tm.now} {s} {text} by {diff:.2f} - bought for {buy_value:.2f} and exited for {updated_order.filled_total_value:.2f} Gains stand at {gains:.2f}"
+                    f"{tm.now} {s} {text} ${diff=:.2f} or {pct:.1f}% {buy_value=:.2f} {bought_on=} {held_days=} {sell_order.filled_total_value=:.2f} {total_gains=:.2f} {winner_count=} {loser_count=} {pct_win=:.0f}%"
                 )
                 ...
 
-    # process sells first
-    highest_ranked = None
-    for s in entered:
-        if not highest_ranked:
-            highest_ranked = s
-        else:
-            if today_top_25[s] < today_top_25[highest_ranked]:
+    if buy_model == "highest":
+        highest_ranked = None
+        for s in entered:
+            if not highest_ranked:
                 highest_ranked = s
+            else:
+                if today_top_25[s] < today_top_25[highest_ranked]:
+                    highest_ranked = s
 
-    if highest_ranked:
-        this_close = sctr_data.loc[tm.now, idx[highest_ranked, "close"]]
+        if highest_ranked:
+            this_close = sctr_data.loc[tm.now, idx[highest_ranked, "close"]]
+            buy_vol = round(buy_value / this_close)
+            buy_vol = 1 if buy_vol == 0 else buy_vol
+            active_positions[highest_ranked] = broker.buy_order_market(
+                highest_ranked, units=buy_vol
+            )
+            pos = today_top_25[highest_ranked]
+            print(f"{tm.now} {highest_ranked} Bought in position {pos:.0f}")
+
+    if buy_model == "velocity":
+        if len(entered) == 0:
+            continue
+        velocity = sctr_data.loc[now, idx[list(entered), "velocity"]]
+        fastest_symbol = velocity.idxmin()[0]
+
+        this_close = sctr_data.loc[tm.now, idx[fastest_symbol, "close"]]
         buy_vol = round(buy_value / this_close)
         buy_vol = 1 if buy_vol == 0 else buy_vol
-        active_positions[highest_ranked] = broker.buy_order_market(
-            highest_ranked, units=buy_vol
+        active_positions[fastest_symbol] = broker.buy_order_market(
+            fastest_symbol, units=buy_vol
         )
-        pos = today_top_25[highest_ranked]
-        print(f"{tm.now} {highest_ranked} Bought in position {pos:.0f}")
+        velocity = sctr_data.loc[now, idx[fastest_symbol, "velocity"]]
 
-    # process sells now
+        print(f"{tm.now} {fastest_symbol} Bought in {velocity=:.0f}")
+
+        """
+        found = False
+        fastest_ranked = None
+        # there's so a better way to do this but whatever
+        symbol_list = (
+            sctr_data.loc[yesterday, idx[:, "rank"]]
+            .loc[lambda x: x <= top_25]
+            .loc[slice(None), "rank"]
+        ).keys()
+        for tmp_symbol in symbol_list:
+            sctr_data[idx[s, "velocy"]] = (
+                sctr_data[idx[tmp_symbol, "rank"]].shift()
+                - sctr_data[idx[tmp_symbol, "rank"]]
+            )
+
+        for s in entered:
+            if not fastest_ranked:
+                fastest_ranked = s
+            else:
+                for key, vel in velocity.items():
+                    position = sctr_data.loc[
+                        now, idx[slice(None), "rank"]
+                    ].sort_values()[key]
+                    if position <= top_25:
+                        print("found")
+                        this_close = sctr_data.loc[tm.now, idx[key, "close"]]
+                        buy_vol = round(buy_value / this_close[0])
+                        buy_vol = 1 if buy_vol == 0 else buy_vol
+                        active_positions[key[0]] = broker.buy_order_market(
+                            key[0], units=buy_vol
+                        )
+                        pos = today_top_25[key[0]]
+                        yday_pos = sctr_data.loc[
+                            yesterday, idx[slice(None), "rank"]
+                        ].sort_values()[key]
+                        this_vel = yday_pos - pos
+
+                        print(
+                            f"{tm.now} {key[0]} Bought in. Velocity {this_vel} today pos {pos:.0f}, yday pos {yday_pos}"
+                        )
+                        found = True
+                        break
+            if found:
+                break
+        """
+    if buy_model == "3up":
+        # if its entered
+        # if its been on 2 up
+        # the fastest of these
+        increase = sctr_data.loc[now, idx[list(entered), "consecutive_increase"]].loc[
+            lambda x: x == True
+        ]
+        if len(increase):
+            increase_keys = list(
+                increase.loc[slice(None), "consecutive_increase"].keys()
+            )
+
+            velocity = (
+                sctr_data.loc[now, idx[list(entered), "velocity"]]
+                .sort_values()
+                .loc[increase_keys]
+            )
+            buy_symbol = velocity.idxmin()[0]
+            this_close = sctr_data.loc[now, idx[buy_symbol, "close"]]
+            buy_vol = round(buy_value / this_close)
+            buy_vol = 1 if buy_vol == 0 else buy_vol
+            active_positions[buy_symbol] = broker.buy_order_market(
+                buy_symbol, units=buy_vol
+            )
+            this_pos = sctr_data.loc[now, idx[buy_symbol, "rank"]]
+
+            print(
+                f"{tm.now} {buy_symbol} Bought in at {this_pos=:.0f} {velocity.min()=:.0f}"
+            )
 
 ...

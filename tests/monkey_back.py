@@ -818,9 +818,9 @@ class BackTestAPI:
 
         # trim zero quantities
         for order in self._assets_held[symbol]:
-            new_assets = set()
+            new_assets = list()
             if order["units"] > 0:
-                new_assets.add(order)
+                new_assets.append(order)
 
             if len(new_assets) > 0:
                 self._assets_held[symbol] = new_assets
